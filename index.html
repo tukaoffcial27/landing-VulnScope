@@ -1,0 +1,1134 @@
+<title>VulnScope — Security Scanner for Python Projects</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* ── Tokens ──────────────────────────────────────────────────── */
+:root {
+  --bg:        #090c10;
+  --bg2:       #0d1117;
+  --surface:   #111820;
+  --surface2:  #161e28;
+  --border:    rgba(255,255,255,.08);
+  --border2:   rgba(255,255,255,.14);
+  --green:     #10b981;
+  --green-s:   rgba(16,185,129,.12);
+  --green-m:   rgba(16,185,129,.22);
+  --red:       #ef4444;
+  --amber:     #f59e0b;
+  --yellow:    #eab308;
+  --fg:        #f1f5f9;
+  --fg2:       #cbd5e1;
+  --muted:     #64748b;
+  --muted2:    #475569;
+  --ff-h:      'Space Grotesk', system-ui, sans-serif;
+  --ff-b:      'Inter', system-ui, sans-serif;
+  color-scheme: dark;
+}
+@media(prefers-color-scheme:light){
+  :root:not([data-theme="dark"]){
+    --bg:#090c10;--bg2:#0d1117;--surface:#111820;color-scheme:dark;
+  }
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  background:var(--bg);color:var(--fg);font-family:var(--ff-b);
+  font-size:16px;line-height:1.6;overflow-x:hidden;
+  padding-left:max(0px,env(safe-area-inset-left,0px));
+  padding-right:max(0px,env(safe-area-inset-right,0px));
+}
+a{color:inherit;text-decoration:none}
+img{max-width:100%}
+button{cursor:pointer;font-family:var(--ff-b);border:none;background:none}
+
+/* ── Layout helpers ──────────────────────────────────────────── */
+.wrap{max-width:1080px;margin:0 auto;padding-inline:max(20px,env(safe-area-inset-left,0px))}
+.section{padding:80px 0}
+.section-sm{padding:60px 0}
+
+/* ── Typography ──────────────────────────────────────────────── */
+.eyebrow{
+  display:inline-flex;align-items:center;gap:7px;
+  font-family:var(--ff-h);font-size:11px;font-weight:700;
+  letter-spacing:.12em;text-transform:uppercase;color:var(--green);
+  background:var(--green-s);border:1px solid rgba(16,185,129,.25);
+  border-radius:999px;padding:4px 12px;
+}
+.eyebrow svg{width:11px;height:11px;fill:var(--green)}
+h1,h2,h3{font-family:var(--ff-h);text-wrap:balance}
+h1{font-size:clamp(36px,5.5vw,62px);font-weight:800;line-height:1.06;letter-spacing:-.03em}
+h2{font-size:clamp(28px,4vw,44px);font-weight:800;line-height:1.1;letter-spacing:-.025em}
+h3{font-size:20px;font-weight:700;letter-spacing:-.01em}
+.text-green{color:var(--green)}
+.text-muted{color:var(--muted)}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.btn{
+  display:inline-flex;align-items:center;gap:8px;
+  font-family:var(--ff-h);font-size:14px;font-weight:700;
+  padding:11px 22px;border-radius:9px;letter-spacing:.01em;
+  transition:opacity .15s,transform .1s;white-space:nowrap;
+}
+.btn:hover{opacity:.88;transform:translateY(-1px)}
+.btn:active{transform:translateY(0)}
+.btn-primary{background:var(--green);color:#000}
+.btn-outline{background:transparent;border:1.5px solid var(--border2);color:var(--fg2)}
+.btn-outline:hover{border-color:var(--green);color:var(--green)}
+.btn-lg{font-size:16px;padding:14px 28px;border-radius:11px}
+.btn svg{width:16px;height:16px;fill:currentColor;flex-shrink:0}
+
+/* ── Nav ─────────────────────────────────────────────────────── */
+#nav{
+  position:fixed;top:env(safe-area-inset-top,0px);left:0;right:0;
+  z-index:100;
+  background:rgba(9,12,16,.8);backdrop-filter:blur(16px) saturate(180%);
+  border-bottom:1px solid var(--border);
+}
+.nav-inner{
+  display:flex;align-items:center;justify-content:space-between;
+  gap:16px;height:60px;
+  max-width:1080px;margin:0 auto;
+  padding-inline:max(20px,env(safe-area-inset-left,0px));
+}
+.nav-logo{display:flex;align-items:center;gap:9px}
+.nav-logo-mark{
+  width:30px;height:30px;background:var(--green);
+  border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.nav-logo-mark svg{width:16px;height:16px;fill:#000}
+.nav-brand{font-family:var(--ff-h);font-size:16px;font-weight:800;letter-spacing:-.01em}
+.nav-brand span{color:var(--green)}
+.nav-links{display:flex;align-items:center;gap:24px}
+.nav-links a{font-size:13px;color:var(--muted);transition:color .15s}
+.nav-links a:hover{color:var(--fg)}
+.nav-cta{display:flex;align-items:center;gap:10px}
+#trial-counter-nav{
+  font-family:var(--ff-h);font-size:11px;font-weight:700;
+  letter-spacing:.06em;padding:5px 10px;border-radius:6px;
+  background:var(--green-s);border:1px solid rgba(16,185,129,.25);
+  color:var(--green);white-space:nowrap;
+}
+@media(max-width:680px){.nav-links{display:none}.nav-cta .btn-outline{display:none}}
+
+/* ── Hero ─────────────────────────────────────────────────────── */
+#hero{
+  padding-top:140px;padding-bottom:80px;
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -10%,rgba(16,185,129,.10) 0%,transparent 70%),
+    var(--bg);
+}
+.hero-inner{
+  display:grid;grid-template-columns:1fr 1fr;gap:48px;align-items:center;
+}
+.hero-left{display:flex;flex-direction:column;gap:24px}
+.hero-h1 em{color:var(--green);font-style:normal}
+.hero-desc{font-size:17px;color:var(--fg2);line-height:1.7;max-width:460px}
+.hero-ctas{display:flex;flex-wrap:wrap;gap:12px;align-items:center}
+.hero-note{font-size:12px;color:var(--muted);margin-top:4px}
+.hero-note span{color:var(--green)}
+
+/* Mock dashboard in hero */
+.hero-dash{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:14px;overflow:hidden;
+  box-shadow:0 32px 80px rgba(0,0,0,.5),0 0 0 1px var(--border);
+  min-width:0;
+}
+.dash-topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:10px 14px;display:flex;align-items:center;gap:7px;
+}
+.dash-dot{width:9px;height:9px;border-radius:50%}
+.dash-title{
+  font-family:var(--ff-h);font-size:11px;font-weight:700;
+  color:var(--green);margin-left:6px;
+}
+.dash-badge-fail{
+  margin-left:auto;font-family:var(--ff-h);font-size:9px;font-weight:700;
+  padding:2px 8px;border-radius:5px;
+  background:rgba(239,68,68,.12);color:var(--red);
+  border:1px solid rgba(239,68,68,.3);
+}
+.dash-body{padding:12px 14px;display:flex;flex-direction:column;gap:9px}
+.dash-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}
+.kpi{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:7px;padding:9px 10px}
+.kpi-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:4px}
+.kpi-val{font-family:var(--ff-h);font-size:20px;font-weight:800;line-height:1}
+.dash-table{background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:7px;overflow:hidden}
+.dt-row{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04);font-size:10px;color:#94a3b8;
+}
+.dt-row:last-child{border-bottom:none}
+.sev-tag{
+  font-size:8px;font-weight:700;padding:2px 6px;border-radius:3px;
+  font-family:var(--ff-h);white-space:nowrap;flex-shrink:0;
+}
+.sc{background:rgba(239,68,68,.12);color:var(--red)}
+.sh{background:rgba(245,158,11,.12);color:var(--amber)}
+.sm{background:rgba(234,179,8,.1);color:var(--yellow)}
+.sl{background:rgba(100,116,139,.12);color:var(--muted)}
+.triage-tag{
+  margin-left:auto;font-size:8px;padding:1px 6px;border-radius:3px;
+  background:var(--green-s);color:var(--green);white-space:nowrap;flex-shrink:0;
+}
+
+@media(max-width:820px){
+  .hero-inner{grid-template-columns:1fr}
+  .hero-dash{display:none}
+}
+
+/* ── Section divider ─────────────────────────────────────────── */
+.divider{height:1px;background:var(--border);max-width:1080px;margin:0 auto}
+
+/* ── Trial scanner ───────────────────────────────────────────── */
+#trial{
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 50%,rgba(16,185,129,.06) 0%,transparent 70%),
+    var(--bg2);
+  padding:80px 0;
+}
+.trial-header{text-align:center;max-width:600px;margin:0 auto 40px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.trial-desc{color:var(--fg2);font-size:16px;line-height:1.65;max-width:480px;text-align:center}
+.trial-counter{
+  font-family:var(--ff-h);font-size:13px;font-weight:700;
+  padding:6px 14px;border-radius:999px;
+  border:1.5px solid rgba(16,185,129,.35);color:var(--green);
+  background:var(--green-s);
+}
+.scanner-box{
+  background:var(--bg);border:1px solid var(--border2);
+  border-radius:16px;overflow:hidden;
+  box-shadow:0 24px 64px rgba(0,0,0,.4);
+  max-width:800px;margin:0 auto;
+}
+.scanner-topbar{
+  background:var(--bg2);border-bottom:1px solid var(--border);
+  padding:12px 20px;display:flex;align-items:center;gap:8px;
+}
+.scanner-dot{width:10px;height:10px;border-radius:50%}
+.scanner-title{font-family:var(--ff-h);font-size:12px;font-weight:700;color:var(--green);margin-left:6px}
+.scanner-demo-label{margin-left:auto;font-size:10px;color:var(--muted);letter-spacing:.05em}
+.scanner-body{padding:24px}
+/* Tabs */
+.scan-tabs{display:flex;gap:4px;background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:9px;padding:4px;margin-bottom:20px}
+.scan-tab{
+  flex:1;text-align:center;font-family:var(--ff-h);font-size:12px;font-weight:700;
+  padding:8px 12px;border-radius:6px;color:var(--muted);transition:all .15s;cursor:pointer;
+}
+.scan-tab.active{background:var(--surface2);color:var(--fg);border:1px solid var(--border2)}
+.scan-input-wrap{position:relative;margin-bottom:16px}
+.scan-input{
+  width:100%;background:var(--surface);border:1.5px solid var(--border2);
+  border-radius:9px;padding:12px 48px 12px 16px;
+  font-size:14px;color:var(--fg);outline:none;font-family:var(--ff-b);
+  transition:border-color .15s;
+}
+.scan-input::placeholder{color:var(--muted)}
+.scan-input:focus{border-color:var(--green)}
+.scan-input-icon{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted)}
+.scan-input-icon svg{width:16px;height:16px;fill:var(--muted)}
+.samples{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.sample-chip{
+  font-size:12px;padding:6px 12px;border-radius:6px;
+  background:var(--surface);border:1px solid var(--border2);color:var(--muted2);
+  cursor:pointer;transition:all .15s;
+}
+.sample-chip:hover,.sample-chip.active{border-color:var(--green);color:var(--green);background:var(--green-s)}
+#scan-btn{
+  width:100%;padding:13px;border-radius:9px;
+  background:var(--green);color:#000;
+  font-family:var(--ff-h);font-size:15px;font-weight:800;
+  letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:opacity .15s,transform .1s;
+}
+#scan-btn:hover{opacity:.88;transform:translateY(-1px)}
+#scan-btn:active{transform:none}
+#scan-btn svg{width:17px;height:17px;fill:#000}
+/* Loading */
+#scan-loading{display:none;padding:28px 0;text-align:center;flex-direction:column;align-items:center;gap:16px}
+.spinner{
+  width:36px;height:36px;border:3px solid rgba(16,185,129,.2);
+  border-top-color:var(--green);border-radius:50%;
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.scan-status-line{font-size:13px;color:var(--muted);min-height:1.4em}
+.progress-bar-wrap{width:100%;max-width:360px;background:rgba(255,255,255,.06);border-radius:999px;height:4px;overflow:hidden}
+.progress-bar{height:100%;background:var(--green);border-radius:999px;transition:width .3s;width:0%}
+/* Results */
+#scan-results{display:none}
+.result-header{
+  display:flex;align-items:center;gap:12px;padding:16px 0 14px;
+  border-bottom:1px solid var(--border);margin-bottom:16px;flex-wrap:wrap;
+}
+.result-title{font-family:var(--ff-h);font-size:14px;font-weight:700;color:var(--fg)}
+.result-meta{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.gate-pass{font-family:var(--ff-h);font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.3)}
+.gate-fail{font-family:var(--ff-h);font-size:11px;font-weight:700;padding:3px 9px;border-radius:5px;background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.3)}
+.sev-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.sev-pill{font-family:var(--ff-h);font-size:11px;font-weight:700;padding:4px 10px;border-radius:6px;border:1px solid var(--border)}
+.findings-table{border-radius:9px;overflow:hidden;border:1px solid var(--border)}
+.f-row{
+  display:grid;grid-template-columns:72px 1fr 90px;gap:10px;
+  align-items:center;padding:9px 14px;border-bottom:1px solid rgba(255,255,255,.04);
+  font-size:12px;color:var(--fg2);
+}
+.f-row:last-child{border-bottom:none}
+.f-row:nth-child(even){background:rgba(255,255,255,.015)}
+.f-file{font-size:10px;color:var(--muted);font-family:monospace;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.f-title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.result-note{margin-top:12px;font-size:12px;color:var(--muted);display:flex;align-items:center;gap:6px;padding:10px 14px;background:var(--green-s);border:1px solid rgba(16,185,129,.18);border-radius:8px}
+.result-note svg{width:14px;height:14px;fill:var(--green);flex-shrink:0}
+/* Used-up */
+.trial-used-banner{
+  background:rgba(239,68,68,.06);border:1.5px solid rgba(239,68,68,.2);
+  border-radius:10px;padding:20px 24px;display:flex;align-items:center;
+  justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;
+}
+.trial-used-text h3{font-size:16px;margin-bottom:4px;color:var(--red)}
+.trial-used-text p{font-size:13px;color:var(--muted)}
+.trial-used-banner .btn-primary{background:var(--green);flex-shrink:0}
+
+/* ── Features ─────────────────────────────────────────────────── */
+#features{background:var(--bg)}
+.features-head{text-align:center;max-width:560px;margin:0 auto 48px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.features-desc{color:var(--fg2);font-size:16px;line-height:1.65;max-width:460px;text-align:center}
+.features-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:20px}
+.feat-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:24px;display:flex;flex-direction:column;gap:12px;
+  transition:border-color .2s,transform .2s;
+}
+.feat-card:hover{border-color:rgba(16,185,129,.3);transform:translateY(-2px)}
+.feat-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--green-s);border:1px solid rgba(16,185,129,.2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.feat-icon svg{width:20px;height:20px;fill:var(--green)}
+.feat-title{font-family:var(--ff-h);font-size:16px;font-weight:700;color:var(--fg)}
+.feat-desc{font-size:14px;color:var(--muted);line-height:1.6}
+.feat-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+.ftag{font-size:10px;padding:3px 8px;border-radius:5px;border:1px solid var(--border2);color:var(--muted2);font-family:var(--ff-h);font-weight:600;letter-spacing:.04em}
+
+/* ── Comparison ───────────────────────────────────────────────── */
+#compare{background:var(--bg2);padding:80px 0}
+.compare-head{text-align:center;max-width:560px;margin:0 auto 48px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.compare-table{width:100%;border:1px solid var(--border2);border-radius:14px;overflow:hidden;overflow-x:auto}
+.cmp-table{width:100%;border-collapse:collapse;min-width:600px}
+.cmp-table th{
+  background:var(--surface);padding:14px 18px;
+  font-family:var(--ff-h);font-size:13px;font-weight:700;color:var(--muted);
+  text-align:left;border-bottom:1px solid var(--border2);
+}
+.cmp-table th.hl{color:var(--green)}
+.cmp-table td{
+  padding:13px 18px;border-bottom:1px solid var(--border);
+  font-size:13px;color:var(--fg2);vertical-align:middle;
+}
+.cmp-table tr:last-child td{border-bottom:none}
+.cmp-table tr.hl-row td{background:rgba(16,185,129,.04)}
+.check{color:var(--green);font-weight:700}
+.cross{color:var(--red)}
+.mid{color:var(--amber)}
+.cmp-row-label{font-weight:600;color:var(--fg)}
+
+/* ── Pricing ──────────────────────────────────────────────────── */
+#pricing{
+  background:var(--bg);padding:80px 0;
+  background-image:radial-gradient(ellipse 55% 50% at 50% 100%,rgba(16,185,129,.07) 0%,transparent 70%);
+}
+.pricing-head{text-align:center;max-width:480px;margin:0 auto 48px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.pricing-card{
+  max-width:480px;margin:0 auto;
+  background:var(--surface);border:1.5px solid rgba(16,185,129,.35);
+  border-radius:20px;padding:40px;position:relative;overflow:hidden;
+}
+.pricing-card::before{
+  content:'';position:absolute;inset:0;
+  background:radial-gradient(ellipse 100% 60% at 50% 0%,rgba(16,185,129,.10) 0%,transparent 60%);
+  pointer-events:none;
+}
+.pricing-badge{
+  font-family:var(--ff-h);font-size:11px;font-weight:700;letter-spacing:.1em;
+  text-transform:uppercase;padding:4px 12px;border-radius:999px;
+  background:var(--green);color:#000;display:inline-block;margin-bottom:20px;
+}
+.pricing-name{font-family:var(--ff-h);font-size:22px;font-weight:800;color:var(--fg);margin-bottom:6px}
+.pricing-tagline{font-size:14px;color:var(--muted);margin-bottom:28px}
+.pricing-price-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:6px}
+.pricing-price{font-family:var(--ff-h);font-size:56px;font-weight:900;color:var(--fg);letter-spacing:-.04em;line-height:1}
+.pricing-once{
+  padding-bottom:6px;font-size:13px;color:var(--green);font-weight:700;
+  font-family:var(--ff-h);letter-spacing:.04em;text-transform:uppercase;line-height:1.3;
+}
+.pricing-note{font-size:12px;color:var(--muted);margin-bottom:28px}
+.pricing-feats{display:flex;flex-direction:column;gap:11px;margin-bottom:32px;border-top:1px solid var(--border);padding-top:24px}
+.pf{display:flex;align-items:center;gap:10px;font-size:14px;color:var(--fg2)}
+.pf-icon{width:18px;height:18px;fill:var(--green);flex-shrink:0}
+.pricing-cta{width:100%;padding:15px;border-radius:11px;background:var(--green);color:#000;font-family:var(--ff-h);font-size:16px;font-weight:800;letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:9px;transition:opacity .15s,transform .1s}
+.pricing-cta:hover{opacity:.88;transform:translateY(-1px)}
+.pricing-cta svg{width:18px;height:18px;fill:#000}
+.pricing-cta-note{text-align:center;font-size:12px;color:var(--muted);margin-top:10px}
+.pricing-studio{text-align:center;font-size:11px;color:var(--muted2);margin-top:16px;letter-spacing:.06em;text-transform:uppercase}
+
+/* ── FAQ ──────────────────────────────────────────────────────── */
+#faq{background:var(--bg2);padding:80px 0}
+.faq-head{text-align:center;max-width:480px;margin:0 auto 48px;display:flex;flex-direction:column;align-items:center;gap:14px}
+.faq-list{max-width:680px;margin:0 auto;display:flex;flex-direction:column;gap:4px}
+.faq-item{background:var(--surface);border:1px solid var(--border);border-radius:11px;overflow:hidden;transition:border-color .15s}
+.faq-item.open{border-color:rgba(16,185,129,.3)}
+.faq-q{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  padding:18px 20px;cursor:pointer;font-family:var(--ff-h);font-size:15px;font-weight:700;color:var(--fg);
+}
+.faq-q svg{width:16px;height:16px;fill:var(--muted);flex-shrink:0;transition:transform .2s}
+.faq-item.open .faq-q svg{transform:rotate(45deg);fill:var(--green)}
+.faq-a{
+  display:none;padding:0 20px 18px;font-size:14px;color:var(--fg2);line-height:1.7;border-top:1px solid var(--border);padding-top:16px;
+}
+.faq-item.open .faq-a{display:block}
+
+/* ── Footer ───────────────────────────────────────────────────── */
+footer{
+  background:var(--bg);border-top:1px solid var(--border);
+  padding:48px 0 32px;
+  padding-left:max(0px,env(safe-area-inset-left,0px));
+  padding-right:max(0px,env(safe-area-inset-right,0px));
+}
+.footer-inner{
+  max-width:1080px;margin:0 auto;
+  padding-inline:max(20px,env(safe-area-inset-left,0px));
+  display:grid;grid-template-columns:1fr 1fr 1fr;gap:40px;
+}
+.footer-brand{display:flex;flex-direction:column;gap:14px}
+.footer-logo{display:flex;align-items:center;gap:9px}
+.footer-logo-mark{width:28px;height:28px;background:var(--green);border-radius:7px;display:flex;align-items:center;justify-content:center}
+.footer-logo-mark svg{width:15px;height:15px;fill:#000}
+.footer-logo-name{font-family:var(--ff-h);font-size:15px;font-weight:800}
+.footer-logo-name span{color:var(--green)}
+.footer-tagline{font-size:13px;color:var(--muted);line-height:1.6;max-width:220px}
+.footer-col h4{font-family:var(--ff-h);font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:8px}
+.footer-col ul li a{font-size:13px;color:var(--muted2);transition:color .15s}
+.footer-col ul li a:hover{color:var(--green)}
+.footer-bottom{
+  max-width:1080px;margin:32px auto 0;
+  padding-inline:max(20px,env(safe-area-inset-left,0px));
+  border-top:1px solid var(--border);padding-top:20px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+}
+.footer-copy{font-size:12px;color:var(--muted2)}
+.footer-links{display:flex;gap:16px}
+.footer-links a{font-size:12px;color:var(--muted2);transition:color .15s}
+.footer-links a:hover{color:var(--muted)}
+@media(max-width:680px){.footer-inner{grid-template-columns:1fr}}
+
+/* ── Paywall Modal ────────────────────────────────────────────── */
+.modal-overlay{
+  position:fixed;inset:0;z-index:1000;
+  background:rgba(0,0,0,.7);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:20px;
+  animation:fadeIn .2s ease;
+}
+.modal-overlay.hidden{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.modal-card{
+  background:var(--surface);border:1.5px solid rgba(16,185,129,.35);
+  border-radius:20px;padding:40px 36px;max-width:460px;width:100%;
+  position:relative;text-align:center;
+  box-shadow:0 32px 80px rgba(0,0,0,.6);
+  animation:slideUp .25s ease;
+}
+@keyframes slideUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-lock-icon{
+  width:56px;height:56px;border-radius:14px;
+  background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.3);
+  display:flex;align-items:center;justify-content:center;margin:0 auto 20px;
+}
+.modal-lock-icon svg{width:28px;height:28px;fill:var(--red)}
+.modal-title{font-family:var(--ff-h);font-size:24px;font-weight:800;color:var(--fg);margin-bottom:10px}
+.modal-desc{font-size:14px;color:var(--muted);line-height:1.65;margin-bottom:24px;max-width:340px;margin-inline:auto}
+.modal-price{margin-bottom:28px;padding:20px;background:var(--bg2);border-radius:12px;border:1px solid var(--border2)}
+.modal-price-label{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
+.modal-price-val{font-family:var(--ff-h);font-size:42px;font-weight:900;color:var(--fg);letter-spacing:-.03em}
+.modal-price-once{font-size:12px;color:var(--green);font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-top:2px}
+.modal-feats{text-align:left;display:flex;flex-direction:column;gap:9px;margin-bottom:28px}
+.modal-feat{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--fg2)}
+.modal-feat svg{width:14px;height:14px;fill:var(--green);flex-shrink:0}
+.modal-cta{
+  width:100%;padding:14px;border-radius:10px;background:var(--green);
+  color:#000;font-family:var(--ff-h);font-size:15px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;gap:9px;
+  transition:opacity .15s,transform .1s;cursor:pointer;text-decoration:none;
+}
+.modal-cta:hover{opacity:.88;transform:translateY(-1px)}
+.modal-cta svg{width:16px;height:16px;fill:#000}
+.modal-dismiss{
+  display:block;text-align:center;margin-top:12px;
+  font-size:12px;color:var(--muted);cursor:pointer;transition:color .15s;
+}
+.modal-dismiss:hover{color:var(--muted2)}
+</style>
+
+<!-- Paywall Modal -->
+<div id="paywall-modal" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div class="modal-lock-icon">
+      <svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+    </div>
+    <h2 class="modal-title">Free Trial Ended</h2>
+    <p class="modal-desc">You've used both free scans. Get the full version for unlimited scans, complete findings, triage dashboard, and reports.</p>
+    <div class="modal-price">
+      <div class="modal-price-label">Lifetime Access</div>
+      <div class="modal-price-val">$799</div>
+      <div class="modal-price-once">One-time · No subscription · Forever</div>
+    </div>
+    <div class="modal-feats">
+      <div class="modal-feat"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Unlimited scans on any project</div>
+      <div class="modal-feat"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Full dashboard — triage, export, CI gate</div>
+      <div class="modal-feat"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Windows · macOS · Linux · Docker</div>
+      <div class="modal-feat"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Runs 100% on your machine — no cloud</div>
+      <div class="modal-feat"><svg viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>12 months of free updates included</div>
+    </div>
+    <a href="https://guidify.lemonsqueezy.com/checkout/buy/347f53a8-a6ba-4c9d-81e5-fdad7546d4aa" target="_blank" rel="noopener" class="modal-cta">
+      <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      Get VulnScope — $799 one-time
+    </a>
+    <span class="modal-dismiss" onclick="document.getElementById('paywall-modal').classList.add('hidden')">Maybe later</span>
+  </div>
+</div>
+
+<!-- ── Navigation ─────────────────────────────────────────────── -->
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <div class="nav-logo-mark">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+      </div>
+      <span class="nav-brand">Vuln<span>Scope</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="#trial">Try Free</a>
+      <a href="#features">Features</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <div class="nav-cta">
+      <span id="trial-counter-nav">2 free scans left</span>
+      <a href="#pricing" class="btn btn-primary" style="font-size:13px;padding:9px 18px;border-radius:8px">Get $799</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────── -->
+<section id="hero">
+  <div class="wrap">
+    <div class="hero-inner">
+      <div class="hero-left">
+        <span class="eyebrow">
+          <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+          Local-first security scanner
+        </span>
+        <h1 class="hero-h1">Find vulnerabilities<br>before attackers <em>do.</em></h1>
+        <p class="hero-desc">VulnScope scans your Python project for CVEs, leaked secrets, and misconfigurations. Runs entirely on your machine — no cloud, no account, no recurring fees.</p>
+        <div class="hero-ctas">
+          <a href="#trial" class="btn btn-primary btn-lg">
+            <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            Try Free Demo
+          </a>
+          <a href="https://guidify.lemonsqueezy.com/checkout/buy/347f53a8-a6ba-4c9d-81e5-fdad7546d4aa" target="_blank" rel="noopener" class="btn btn-outline btn-lg">Get $799 lifetime</a>
+        </div>
+        <p class="hero-note"><span>2 free scans</span> included — no sign-up required</p>
+      </div>
+      <div class="hero-dash">
+        <div class="dash-topbar">
+          <div class="dash-dot" style="background:#ef4444"></div>
+          <div class="dash-dot" style="background:#f59e0b"></div>
+          <div class="dash-dot" style="background:#10b981"></div>
+          <span class="dash-title">VulnScope Dashboard</span>
+          <div class="dash-badge-fail">GATE FAIL</div>
+        </div>
+        <div class="dash-body">
+          <div class="dash-kpis">
+            <div class="kpi"><div class="kpi-label">Total</div><div class="kpi-val" style="color:var(--fg)">227</div></div>
+            <div class="kpi"><div class="kpi-label">Critical</div><div class="kpi-val" style="color:var(--red)">35</div></div>
+            <div class="kpi"><div class="kpi-label">High</div><div class="kpi-val" style="color:var(--amber)">70</div></div>
+            <div class="kpi"><div class="kpi-label">CVEs</div><div class="kpi-val" style="color:var(--green)">197</div></div>
+          </div>
+          <div class="dash-table">
+            <div class="dt-row"><span class="sev-tag sc">Critical</span><span>AWS access key in .env</span></div>
+            <div class="dt-row"><span class="sev-tag sc">Critical</span><span>Stripe live secret key</span><span class="triage-tag">false-positive</span></div>
+            <div class="dt-row"><span class="sev-tag sh">High</span><span>requests — CVE-GHSA-9wx4</span></div>
+            <div class="dt-row"><span class="sev-tag sh">High</span><span>eval() in utils/parser.py</span></div>
+            <div class="dt-row"><span class="sev-tag sm">Medium</span><span>CORS_ALLOW_ALL_ORIGINS=True</span><span class="triage-tag">confirmed</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── Free Trial Scanner ──────────────────────────────────────── -->
+<section id="trial">
+  <div class="wrap">
+    <div class="trial-header">
+      <span class="eyebrow">
+        <svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+        Interactive demo
+      </span>
+      <h2>Try VulnScope right now</h2>
+      <p class="trial-desc">Enter a GitHub URL, website URL, or select a sample project. See real findings in seconds.</p>
+      <div class="trial-counter" id="trial-counter">2 free scans remaining</div>
+    </div>
+
+    <div class="scanner-box">
+      <div class="scanner-topbar">
+        <div class="scanner-dot" style="background:#ef4444"></div>
+        <div class="scanner-dot" style="background:#f59e0b"></div>
+        <div class="scanner-dot" style="background:#10b981"></div>
+        <span class="scanner-title">VulnScope Scanner</span>
+        <span class="scanner-demo-label">DEMO MODE</span>
+      </div>
+      <div class="scanner-body">
+
+        <!-- Trial used-up banner (hidden by default) -->
+        <div id="trial-used-banner" class="trial-used-banner" style="display:none">
+          <div class="trial-used-text">
+            <h3>Free trial limit reached</h3>
+            <p>Get the full version to run unlimited scans on any project.</p>
+          </div>
+          <a href="https://guidify.lemonsqueezy.com/checkout/buy/347f53a8-a6ba-4c9d-81e5-fdad7546d4aa" target="_blank" rel="noopener" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" style="width:14px;height:14px;fill:#000"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+            Get Full Access $799
+          </a>
+        </div>
+
+        <!-- Scan tabs -->
+        <div class="scan-tabs" id="scan-tabs">
+          <div class="scan-tab active" data-tab="github">GitHub / ZIP</div>
+          <div class="scan-tab" data-tab="web">Website URL</div>
+          <div class="scan-tab" data-tab="sample">Sample Project</div>
+        </div>
+
+        <!-- GitHub/ZIP input -->
+        <div id="tab-github">
+          <div class="scan-input-wrap">
+            <input class="scan-input" id="input-github" type="text" placeholder="https://github.com/username/repo" />
+            <span class="scan-input-icon"><svg viewBox="0 0 24 24"><path d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.87 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/></svg></span>
+          </div>
+        </div>
+
+        <!-- Web input -->
+        <div id="tab-web" style="display:none">
+          <div class="scan-input-wrap">
+            <input class="scan-input" id="input-web" type="text" placeholder="https://example.com" />
+            <span class="scan-input-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></span>
+          </div>
+        </div>
+
+        <!-- Sample projects -->
+        <div id="tab-sample" style="display:none">
+          <div class="samples">
+            <div class="sample-chip active" data-sample="django">Django E-commerce App</div>
+            <div class="sample-chip" data-sample="flask">Flask REST API</div>
+            <div class="sample-chip" data-sample="fastapi">FastAPI Microservice</div>
+          </div>
+        </div>
+
+        <!-- Scan button -->
+        <button id="scan-btn" onclick="startScan()">
+          <svg viewBox="0 0 24 24"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/></svg>
+          Run Security Scan
+        </button>
+
+        <!-- Loading state -->
+        <div id="scan-loading" style="display:none;flex-direction:column;align-items:center;gap:16px;padding:28px 0">
+          <div class="spinner"></div>
+          <div class="scan-status-line" id="scan-status">Initializing scanner…</div>
+          <div class="progress-bar-wrap"><div class="progress-bar" id="progress-bar"></div></div>
+        </div>
+
+        <!-- Results -->
+        <div id="scan-results" style="display:none">
+          <div class="result-header">
+            <div class="result-title" id="result-title">Scan complete</div>
+            <div class="result-meta">
+              <span id="result-duration">3.8s</span>
+              <span>·</span>
+              <span id="result-total">0 findings</span>
+              <span id="result-gate"></span>
+            </div>
+          </div>
+          <div class="sev-pills" id="sev-pills"></div>
+          <div class="findings-table" id="findings-table"></div>
+          <div class="result-note" id="result-note">
+            <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
+            <span>Demo mode — results are simulated. Full version runs real static analysis on your actual codebase.</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── Features ───────────────────────────────────────────────── -->
+<section id="features" class="section">
+  <div class="wrap">
+    <div class="features-head">
+      <span class="eyebrow">What it scans</span>
+      <h2>Everything in one dashboard</h2>
+      <p class="features-desc">VulnScope combines four scanner categories into one unified interface — no switching tools.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M20 6h-2.18c.07-.44.18-.88.18-1.33C18 2.1 15.9 0 13.33 0c-1.59 0-2.97.79-3.78 2L12 4.33 13.44 2c.46-.64 1.2-1 1.89-1 1.38 0 2.5 1.12 2.5 2.5 0 .56-.21 1.08-.55 1.5H12c-.55 0-1 .45-1 1v1c0 .55.45 1 1 1h4v2H9V8H7v2.09C5.17 10.56 4 12.14 4 14c0 2.21 1.79 4 4 4h8c2.21 0 4-1.79 4-4V8c0-1.11-.89-2-2-2zm-4 10H8c-1.1 0-2-.9-2-2 0-1.1.9-2 2-2h8c1.1 0 2 .9 2 2 0 1.1-.9 2-2 2z"/></svg></div>
+        <div class="feat-title">Dependency CVEs</div>
+        <div class="feat-desc">Checks every package in requirements.txt against the OSV.dev database — the same CVE source GitHub uses. Gets CVSS scores, affected versions, and fix recommendations.</div>
+        <div class="feat-tags"><span class="ftag">pip</span><span class="ftag">OSV.dev</span><span class="ftag">CVSS</span></div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg></div>
+        <div class="feat-title">Static Analysis (SAST)</div>
+        <div class="feat-desc">16 rules covering eval(), shell injection, SQL concatenation, pickle deserialization, hardcoded credentials, debug flags, and more. Direct file + line number references.</div>
+        <div class="feat-tags"><span class="ftag">16 rules</span><span class="ftag">eval</span><span class="ftag">SQL injection</span><span class="ftag">shell=True</span></div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg></div>
+        <div class="feat-title">Secrets & Config</div>
+        <div class="feat-desc">Detects API keys, tokens, and passwords in .env files, Python configs, and YAML. Secret values are masked in reports — only partial samples are stored, never the full key.</div>
+        <div class="feat-tags"><span class="ftag">API keys</span><span class="ftag">.env</span><span class="ftag">tokens</span><span class="ftag">masked</span></div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/></svg></div>
+        <div class="feat-title">Web Security Headers</div>
+        <div class="feat-desc">Scans any public website for missing or misconfigured HTTP security headers: CSP, HSTS, X-Frame-Options, Referrer-Policy, Permissions-Policy, and more.</div>
+        <div class="feat-tags"><span class="ftag">CSP</span><span class="ftag">HSTS</span><span class="ftag">any domain</span></div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M3 18h6v-2H3v2zM3 6v2h18V6H3zm0 7h12v-2H3v2z"/></svg></div>
+        <div class="feat-title">Triage Dashboard</div>
+        <div class="feat-desc">Review every finding in a clean UI. Mark as confirmed, false-positive, accepted-risk, or fix-later. Bulk-triage hundreds of findings at once. Filter, search, sort by severity.</div>
+        <div class="feat-tags"><span class="ftag">bulk triage</span><span class="ftag">filter</span><span class="ftag">notes</span></div>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon"><svg viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg></div>
+        <div class="feat-title">Export Reports</div>
+        <div class="feat-desc">Export in JSON (machine-readable, round-trip), Markdown (human-readable with fillable fields), or CSV (spreadsheet, one row per finding). Include triage status in every format.</div>
+        <div class="feat-tags"><span class="ftag">JSON</span><span class="ftag">Markdown</span><span class="ftag">CSV</span><span class="ftag">CI gate</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── Comparison ─────────────────────────────────────────────── -->
+<section id="compare">
+  <div class="wrap">
+    <div class="compare-head">
+      <span class="eyebrow">Why VulnScope</span>
+      <h2>Compare your options</h2>
+    </div>
+    <div class="compare-table">
+      <table class="cmp-table">
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Manual audit</th>
+            <th>SaaS scanner<br><small style="font-weight:400;color:var(--muted2)">Snyk, SonarQube</small></th>
+            <th class="hl">VulnScope</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="cmp-row-label">Price</td>
+            <td>$5,000+ per audit</td>
+            <td>$1,200–$2,400/yr</td>
+            <td class="hl-row" style="color:var(--green);font-weight:700">$799 — one time</td>
+          </tr>
+          <tr>
+            <td class="cmp-row-label">Code leaves your machine</td>
+            <td class="mid">Sometimes</td>
+            <td class="cross">Yes — cloud upload</td>
+            <td class="hl-row check">Never</td>
+          </tr>
+          <tr>
+            <td class="cmp-row-label">CVE scanning</td>
+            <td class="mid">Manual</td>
+            <td class="check">Yes</td>
+            <td class="hl-row check">Yes</td>
+          </tr>
+          <tr>
+            <td class="cmp-row-label">Secret detection</td>
+            <td class="mid">Manual</td>
+            <td class="check">Yes</td>
+            <td class="hl-row check">Yes</td>
+          </tr>
+          <tr>
+            <td class="cmp-row-label">Triage & reports</td>
+            <td class="mid">Varies</td>
+            <td class="check">Yes</td>
+            <td class="hl-row check">Yes</td>
+          </tr>
+          <tr>
+            <td class="cmp-row-label">Works offline</td>
+            <td class="check">Yes</td>
+            <td class="cross">No</td>
+            <td class="hl-row check">Yes</td>
+          </tr>
+          <tr>
+            <td class="cmp-row-label">Windows + macOS + Linux</td>
+            <td class="mid">Varies</td>
+            <td class="check">Yes (web)</td>
+            <td class="hl-row check">Yes — native</td>
+          </tr>
+          <tr>
+            <td class="cmp-row-label">Subscription required</td>
+            <td class="check">No</td>
+            <td class="cross">Yes</td>
+            <td class="hl-row check">Never</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── Pricing ────────────────────────────────────────────────── -->
+<section id="pricing" class="section">
+  <div class="wrap">
+    <div class="pricing-head">
+      <span class="eyebrow">Pricing</span>
+      <h2>One price. Forever.</h2>
+    </div>
+    <div class="pricing-card">
+      <div class="pricing-badge">Lifetime License</div>
+      <div class="pricing-name">VulnScope Dashboard</div>
+      <div class="pricing-tagline">Everything included. No subscription. No upsell.</div>
+      <div class="pricing-price-row">
+        <div class="pricing-price">$799</div>
+        <div class="pricing-once">One-time<br>payment</div>
+      </div>
+      <div class="pricing-note">Pay once, use forever. Includes 12 months of free updates.</div>
+      <div class="pricing-feats">
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Unlimited scans on any project</div>
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Dep CVEs · SAST · Secrets · Web headers</div>
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Full triage dashboard + bulk triage</div>
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Export: JSON · Markdown · CSV</div>
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>CI gate (PASS/FAIL per severity)</div>
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Windows · macOS · Linux · Docker</div>
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>Runs 100% offline — your data stays local</div>
+        <div class="pf"><svg class="pf-icon" viewBox="0 0 24 24"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>12 months of free updates</div>
+      </div>
+      <a href="https://guidify.lemonsqueezy.com/checkout/buy/347f53a8-a6ba-4c9d-81e5-fdad7546d4aa" target="_blank" rel="noopener" class="pricing-cta">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+        Get VulnScope — $799 one-time
+      </a>
+      <p class="pricing-cta-note">Secure checkout via Lemon Squeezy · Instant download after purchase</p>
+      <p class="pricing-studio">© 2026 Cikal Studio Labs</p>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── FAQ ────────────────────────────────────────────────────── -->
+<section id="faq" class="section">
+  <div class="wrap">
+    <div class="faq-head">
+      <span class="eyebrow">FAQ</span>
+      <h2>Common questions</h2>
+    </div>
+    <div class="faq-list">
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What Python versions does VulnScope support?<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+        <div class="faq-a">VulnScope supports Python 3.9 and above. The scanner itself requires Python 3.9+; the dashboard runs on Node.js 18 LTS or later. Both are available on Windows, macOS, and Linux.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Does VulnScope scan JavaScript or TypeScript projects?<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+        <div class="faq-a">Currently VulnScope is optimized for Python projects (CVE detection via pip packages, SAST rules for Python). JavaScript/TypeScript scanning is on the roadmap. The web header scanner works for any domain regardless of stack.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What happens to my code during a scan?<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+        <div class="faq-a">Your code never leaves your machine. VulnScope runs entirely locally. The only outbound request during a scan is to OSV.dev to fetch CVE metadata for your package names and versions — your actual source code is never transmitted anywhere.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What happens after 12 months?<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+        <div class="faq-a">The license is lifetime — VulnScope continues to work indefinitely. The 12-month update period means you receive new features and scanner rule updates for one year. After that, your existing version keeps working; you just won't get new feature releases automatically.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">Can I use it for client projects or bug bounties?<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+        <div class="faq-a">Yes — the license permits use on projects you own or are authorized to test, including client work (with engagement authorization) and bug bounty targets listed in a program's scope. It is not permitted to scan systems you do not have authorization for.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q" onclick="toggleFaq(this)">What do I get in the download?<svg viewBox="0 0 24 24"><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg></div>
+        <div class="faq-a">A ZIP archive containing: the VulnScope Dashboard (Next.js standalone build), the VulnScope CLI Python scanner, setup scripts for Windows (PowerShell), macOS/Linux (bash), and Docker, plus INSTALL.md with step-by-step instructions. No internet required after initial setup.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="footer-logo">
+        <div class="footer-logo-mark"><svg viewBox="0 0 24 24" style="width:15px;height:15px;fill:#000"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg></div>
+        <span class="footer-logo-name">Vuln<span>Scope</span></span>
+      </div>
+      <p class="footer-tagline">Local-first security scanner for Python projects. No cloud, no subscription, no telemetry.</p>
+    </div>
+    <div class="footer-col">
+      <h4>Product</h4>
+      <ul>
+        <li><a href="#features">Features</a></li>
+        <li><a href="#compare">Compare</a></li>
+        <li><a href="#pricing">Pricing</a></li>
+        <li><a href="#faq">FAQ</a></li>
+        <li><a href="https://github.com/tukaoffcial27/vulnscope" target="_blank" rel="noopener">GitHub</a></li>
+      </ul>
+    </div>
+    <div class="footer-col">
+      <h4>Legal</h4>
+      <ul>
+        <li><a href="/privacy">Privacy Policy</a></li>
+        <li><a href="/terms">Terms &amp; Conditions</a></li>
+      </ul>
+      <h4 style="margin-top:20px">Purchase</h4>
+      <ul>
+        <li><a href="https://guidify.lemonsqueezy.com/checkout/buy/347f53a8-a6ba-4c9d-81e5-fdad7546d4aa" target="_blank" rel="noopener">Buy on Lemon Squeezy</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">© 2026 Cikal Studio Labs · vulnscope.cikal.store</span>
+    <div class="footer-links">
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="https://guidify.lemonsqueezy.com/checkout/buy/347f53a8-a6ba-4c9d-81e5-fdad7546d4aa" target="_blank" rel="noopener">Buy</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Trial state ───────────────────────────────────────────────
+const LS_KEY = 'vulnscope_trial_v1';
+const MAX_FREE = 2;
+const BUY_URL  = 'https://guidify.lemonsqueezy.com/checkout/buy/347f53a8-a6ba-4c9d-81e5-fdad7546d4aa';
+
+function getCount() { try { return parseInt(localStorage.getItem(LS_KEY)||'0',10); } catch { return 0; } }
+function saveCount(n) { try { localStorage.setItem(LS_KEY,n); } catch {} }
+
+function updateCounterUI() {
+  const used = getCount();
+  const left = Math.max(0, MAX_FREE - used);
+  const txt = left === 0
+    ? '⚠ Free trial used'
+    : left === 1 ? '1 free scan remaining' : '2 free scans remaining';
+  document.getElementById('trial-counter').textContent = txt;
+  document.getElementById('trial-counter-nav').textContent = left === 0 ? '0 scans left' : (left + ' free scans left');
+  if (left === 0) {
+    document.getElementById('trial-counter').style.borderColor='rgba(239,68,68,.4)';
+    document.getElementById('trial-counter').style.color='#ef4444';
+    document.getElementById('trial-counter').style.background='rgba(239,68,68,.08)';
+    document.getElementById('trial-used-banner').style.display='flex';
+    document.getElementById('scan-btn').disabled = true;
+    document.getElementById('scan-btn').style.opacity = '0.4';
+    document.getElementById('scan-btn').style.cursor = 'not-allowed';
+  }
+}
+
+// ── Tabs ───────────────────────────────────────────────────────
+let currentTab = 'github';
+document.querySelectorAll('.scan-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.scan-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    document.getElementById('tab-github').style.display = currentTab==='github' ? 'block' : 'none';
+    document.getElementById('tab-web').style.display    = currentTab==='web'    ? 'block' : 'none';
+    document.getElementById('tab-sample').style.display = currentTab==='sample' ? 'block' : 'none';
+    document.getElementById('scan-results').style.display = 'none';
+    document.getElementById('scan-loading').style.display = 'none';
+  });
+});
+document.querySelectorAll('.sample-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.sample-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  });
+});
+
+// ── Mock data ─────────────────────────────────────────────────
+const MOCK = {
+  python: {
+    title:'Python Project Scan',duration:'3.8s',gate:'FAIL',total:24,
+    sev:{critical:5,high:8,medium:7,low:4},
+    findings:[
+      {sev:'CRITICAL',cat:'secrets',title:'Stripe live secret key detected in .env.example',file:'.env.example:3'},
+      {sev:'CRITICAL',cat:'secrets',title:'Potential AWS access key (AKIA…) in config/settings.py',file:'config/settings.py:47'},
+      {sev:'CRITICAL',cat:'dep_cve',title:'requests 2.25.0 — CVE-GHSA-9wx4-h78v (CVSS 9.6)',file:'requirements.txt:12'},
+      {sev:'CRITICAL',cat:'dep_cve',title:'Pillow 9.1.0 — CVE-GHSA-56pw-mpj4 (CVSS 9.8)',file:'requirements.txt:8'},
+      {sev:'CRITICAL',cat:'config', title:'Flask DEBUG=True in production environment (app.py)',file:'app.py:14'},
+      {sev:'HIGH',cat:'sast',title:'eval() usage — arbitrary code execution risk',file:'utils/parser.py:142'},
+      {sev:'HIGH',cat:'sast',title:'subprocess with shell=True — command injection risk',file:'scripts/deploy.py:67'},
+      {sev:'HIGH',cat:'dep_cve',title:'django 3.2.4 — CVE-GHSA-2pmj-h4zy (CVSS 8.1)',file:'requirements.txt:5'},
+      {sev:'HIGH',cat:'dep_cve',title:'cryptography 36.0.0 — CVE-GHSA-h4gh-qq45 (CVSS 7.4)',file:'requirements.txt:9'},
+      {sev:'MEDIUM',cat:'sast',title:'SQL query string concatenation — potential SQLi',file:'db/queries.py:89'},
+      {sev:'MEDIUM',cat:'config',title:'CORS_ALLOW_ALL_ORIGINS=True in production settings',file:'settings/prod.py:33'},
+    ]
+  },
+  web: {
+    title:'Web Security Headers Scan',duration:'1.2s',gate:'PASS',total:5,
+    sev:{critical:0,high:1,medium:3,low:1},
+    findings:[
+      {sev:'HIGH',cat:'web_headers',title:'X-Frame-Options header not set — clickjacking risk',file:'HTTP Response'},
+      {sev:'MEDIUM',cat:'web_headers',title:'Content-Security-Policy header missing',file:'HTTP Response'},
+      {sev:'MEDIUM',cat:'web_headers',title:'Strict-Transport-Security max-age too short (<6 months)',file:'HTTP Response'},
+      {sev:'MEDIUM',cat:'web_headers',title:'Referrer-Policy header not configured',file:'HTTP Response'},
+      {sev:'LOW',cat:'web_headers',title:'Permissions-Policy header not set',file:'HTTP Response'},
+    ]
+  },
+  flask: {
+    title:'Flask REST API Scan',duration:'2.1s',gate:'FAIL',total:11,
+    sev:{critical:2,high:4,medium:3,low:2},
+    findings:[
+      {sev:'CRITICAL',cat:'secrets',title:'JWT_SECRET hardcoded as "dev-secret-key" in auth.py',file:'auth.py:12'},
+      {sev:'CRITICAL',cat:'dep_cve',title:'Flask-SQLAlchemy 2.5.1 — CVE-GHSA-5hce-3rv8 (CVSS 9.1)',file:'requirements.txt:4'},
+      {sev:'HIGH',cat:'sast',title:'pickle.loads() usage — arbitrary code execution',file:'cache/deserialize.py:34'},
+      {sev:'HIGH',cat:'sast',title:'Direct SQL execution without parameterization',file:'routes/users.py:88'},
+      {sev:'HIGH',cat:'dep_cve',title:'Werkzeug 2.0.0 — CVE-GHSA-m9d4-5pq2 (CVSS 7.5)',file:'requirements.txt:6'},
+      {sev:'MEDIUM',cat:'config',title:'TESTING=True flag left active in config.py',file:'config.py:20'},
+    ]
+  },
+  fastapi: {
+    title:'FastAPI Microservice Scan',duration:'1.9s',gate:'FAIL',total:8,
+    sev:{critical:1,high:3,medium:3,low:1},
+    findings:[
+      {sev:'CRITICAL',cat:'secrets',title:'Database password hardcoded in connection string',file:'db/engine.py:5'},
+      {sev:'HIGH',cat:'sast',title:'eval() in template rendering — XSS + code exec risk',file:'api/render.py:67'},
+      {sev:'HIGH',cat:'dep_cve',title:'pydantic 1.9.0 — CVE-GHSA-9d8v-9v6q (CVSS 7.9)',file:'requirements.txt:3'},
+      {sev:'HIGH',cat:'config',title:'CORS origins set to ["*"] in main.py',file:'main.py:28'},
+      {sev:'MEDIUM',cat:'sast',title:'No rate limiting on /auth/token endpoint',file:'api/auth.py:45'},
+    ]
+  }
+};
+
+// ── Scanner simulation ────────────────────────────────────────
+const STEPS = [
+  [15, 'Initializing scanner…'],
+  [30, 'Loading dependencies…'],
+  [50, 'Running dependency CVE check…'],
+  [65, 'Running SAST analysis…'],
+  [80, 'Scanning for secrets…'],
+  [92, 'Checking configuration…'],
+  [100, 'Scan complete.']
+];
+
+function startScan() {
+  if (getCount() >= MAX_FREE) { showPaywall(); return; }
+
+  document.getElementById('scan-results').style.display = 'none';
+  document.getElementById('scan-btn').style.display = 'none';
+  document.getElementById('scan-loading').style.display = 'flex';
+
+  let stepIdx = 0;
+  function nextStep() {
+    if (stepIdx >= STEPS.length) {
+      clearInterval(ticker);
+      finishScan();
+      return;
+    }
+    const [pct, msg] = STEPS[stepIdx++];
+    document.getElementById('progress-bar').style.width = pct + '%';
+    document.getElementById('scan-status').textContent = msg;
+  }
+  nextStep();
+  const ticker = setInterval(nextStep, 400);
+}
+
+function finishScan() {
+  const newCount = getCount() + 1;
+  saveCount(newCount);
+  updateCounterUI();
+
+  // Pick mock result
+  let key = 'python';
+  if (currentTab === 'web') key = 'web';
+  else if (currentTab === 'sample') {
+    const active = document.querySelector('.sample-chip.active');
+    if (active) key = active.dataset.sample === 'flask' ? 'flask' : active.dataset.sample === 'fastapi' ? 'fastapi' : 'python';
+  }
+  const data = MOCK[key] || MOCK.python;
+
+  // Render results
+  document.getElementById('scan-loading').style.display = 'none';
+  if (newCount < MAX_FREE) {
+    document.getElementById('scan-btn').style.display = 'flex';
+  }
+
+  document.getElementById('result-title').textContent = data.title;
+  document.getElementById('result-duration').textContent = data.duration;
+  document.getElementById('result-total').textContent = data.total + ' findings';
+  document.getElementById('result-gate').innerHTML =
+    data.gate === 'FAIL'
+      ? '<span class="gate-fail">● GATE FAIL</span>'
+      : '<span class="gate-pass">● GATE PASS</span>';
+
+  // Sev pills
+  const sp = document.getElementById('sev-pills');
+  sp.innerHTML = '';
+  const sevColors = {critical:'background:rgba(239,68,68,.12);color:#ef4444;border-color:rgba(239,68,68,.3)',high:'background:rgba(245,158,11,.12);color:#f59e0b;border-color:rgba(245,158,11,.3)',medium:'background:rgba(234,179,8,.1);color:#eab308;border-color:rgba(234,179,8,.3)',low:'background:rgba(100,116,139,.12);color:#94a3b8;border-color:rgba(100,116,139,.3)'};
+  ['critical','high','medium','low'].forEach(s => {
+    if (data.sev[s] > 0) {
+      const el = document.createElement('span');
+      el.className = 'sev-pill';
+      el.style.cssText = sevColors[s];
+      el.textContent = s.charAt(0).toUpperCase()+s.slice(1)+' · '+data.sev[s];
+      sp.appendChild(el);
+    }
+  });
+
+  // Findings table
+  const ft = document.getElementById('findings-table');
+  const sevClass = {CRITICAL:'sc',HIGH:'sh',MEDIUM:'sm',LOW:'sl'};
+  ft.innerHTML = data.findings.map(f => `
+    <div class="f-row">
+      <span class="sev-tag ${sevClass[f.sev]||'sl'}">${f.sev}</span>
+      <span class="f-title">${f.title}</span>
+      <span class="f-file">${f.file}</span>
+    </div>
+  `).join('');
+
+  document.getElementById('scan-results').style.display = 'block';
+
+  if (newCount >= MAX_FREE) {
+    setTimeout(showPaywall, 1200);
+  }
+}
+
+function showPaywall() {
+  document.getElementById('paywall-modal').classList.remove('hidden');
+}
+
+// ── FAQ accordion ─────────────────────────────────────────────
+function toggleFaq(el) {
+  const item = el.closest('.faq-item');
+  const wasOpen = item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i => i.classList.remove('open'));
+  if (!wasOpen) item.classList.add('open');
+}
+
+// ── Init ───────────────────────────────────────────────────────
+updateCounterUI();
+</script>
